@@ -1,5 +1,7 @@
+import os
+import pickle
 import streamlit as st
-import pandas as pd
+import pandas as pd  
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.datasets import load_iris
@@ -26,4 +28,12 @@ report = classification_report(y_test, y_pred, target_names=labels)
 conf_matrix = confusion_matrix(y_test, y_pred)
 accuracy = clf.score(X_test, y_test)
 
+# Create the 'model' directory if it doesn't exist
+os.makedirs("model", exist_ok=True)
+
+# Save the trained model to a file
+with open("model/iris_model.pkl", "wb") as f:
+    pickle.dump(clf, f)
+
+print("Model trained and saved successfully!")
 # Streamlit App
