@@ -1,39 +1,69 @@
-import os
+from flask import Flask, request, jsonify
+# import joblib
 import pickle
-import streamlit as st
-import pandas as pd  
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.datasets import load_iris
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
+import numpy as np
+from flask_cors import CORS
 
-# Load
-iris = load_iris()
-X = pd.DataFrame(iris.data, columns=iris.feature_names)
-y = iris.target
-labels = iris.target_names
+app = Flask(__name__)
+CORS(app)
 
-# Split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=66)
+# Load model (global scope)
+# try:
+#     model = pickle.load('./model/iris_model.pkl')
+#     print("Model loaded successfully!")
+# except Exception as e:
+#     print(f"Error loading model: {e}")
+#     model = None
 
-# Train
-clf = RandomForestClassifier()
-clf.fit(X_train, y_train)
-y_pred = clf.predict(X_test)
+with open('./model/iris_model.pkl', 'rb') as f:
+    model = pickle.load(f)
 
-# Eval
-report = classification_report(y_test, y_pred, target_names=labels)
-conf_matrix = confusion_matrix(y_test, y_pred)
-accuracy = clf.score(X_test, y_test)
+@app.route('/')
+def home():
+    return "Flask Prediction API is running!"
 
-# Create the 'model' directory if it doesn't exist
-os.makedirs("model", exist_ok=True)
+@app.route('/predict', methods=['POST'])
+def predict():
+    if model is None:
+        return jsonify({"error": "Model not loaded"}), 500
 
-# Save the trained model to a file
-with open("model/iris_model.pkl", "wb") as f:
-    pickle.dump(clf, f)
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
 
-print("Model trained and saved successfully!")
-# Streamlit App
+    try:
+        data = request.get_json()
+        
+        # Validate input
+        if not data or not isinstance(data, dict):
+            return jsonify({"error": "Invalid input format"}), 400
+            
+        # Convert values to float safely
+        try:
+            features = [float(x) for x in data.values()]
+        except (ValueError, TypeError):
+            return jsonify({"error": "All values must be numeric"}), 400
+
+        # Debug print
+        print("Received features:", features)
+        
+        # Convert to numpy array and reshape for prediction
+        features_array = np.array(features).reshape(1, -1)
+        
+        # Make prediction
+        prediction = model.predict(features_array)[0]
+        
+        return jsonify({
+            "prediction": float(prediction),  # Ensure JSON serializable
+            "status": "success",
+            "input_features": features
+        }), 200
+        
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+    
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
