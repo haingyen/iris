@@ -1,0 +1,20 @@
+services:
+  reactjs:
+    build: ./frontend
+    container_name: reactjs
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - flask
+  flask:
+    build: ./backend
+    container_name: flask
+    ports:
+      - "5000:5000"
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
