@@ -10,5 +10,14 @@ pipeline {
                 }
             }
         }
+        stage('Build Frontend Docker Image') {
+            steps {
+                // Build Frontend Docker Image
+                script {
+                    echo 'Building Frontend Docker Image...'
+                    docker.build('iris-frontend', './frontend')
+                }
+            }
+        }
     }
 }
